@@ -31,6 +31,7 @@ class Context {
         new features.GotoDefinitionFeature(this);
         new features.FindReferencesFeature(this);
         new features.DocumentSymbolsFeature(this);
+        new features.CodeLensFeature(this);
 
         return resolve({
             capabilities: {
@@ -45,6 +46,9 @@ class Context {
                 hoverProvider: true,
                 referencesProvider: true,
                 documentSymbolProvider: true,
+                codeLensProvider: {
+                    resolveProvider: true
+                }
             }
         });
     }
