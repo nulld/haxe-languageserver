@@ -7,13 +7,6 @@ import jsonrpc.ErrorCodes;
 
 import Uri.uriToFsPath;
 
-interface I {
-    public function test():Void;
-    public function test2(i:Int):Void;
-}
-
-class C implements I { }
-
 class CodeLensFeature extends Feature {
     override function init() {
         context.protocol.onCodeLens = onCodeLens;
