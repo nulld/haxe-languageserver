@@ -4,6 +4,7 @@ import haxe.extern.EitherType;
 import jsonrpc.CancellationToken;
 import jsonrpc.ResponseError;
 import haxeLanguageServer.vscodeProtocol.Types;
+import haxeLanguageServer.HaxeDisplayTypes;
 
 class GotoDefinitionFeature extends Feature {
     override function init() {
@@ -19,15 +20,10 @@ class GotoDefinitionFeature extends Feature {
             if (token.canceled)
                 return;
 
-            var xml = try Xml.parse(data).firstElement() catch (_:Dynamic) null;
-            if (xml == null) return reject(ResponseError.internalError("Invalid xml data: " + data));
-
-            var positions = [for (el in xml.elements()) el.firstChild().nodeValue];
-            if (positions.length == 0)
-                return resolve([]);
+            var data:Array<Pos> = try haxe.Json.parse(data) catch (_:Dynamic) return reject(ResponseError.internalError("Invalid JSON data: " + data));
 
             var results = [];
-            for (pos in positions) {
+            for (pos in data) {
                 var location = HaxePosition.parse(pos, doc, null); // no cache because this right now only returns one position
                 if (location == null) {
                     trace("Got invalid position: " + pos);

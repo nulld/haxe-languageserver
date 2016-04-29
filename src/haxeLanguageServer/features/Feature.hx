@@ -17,6 +17,7 @@ class Feature {
         actualArgs = actualArgs.concat(context.displayArguments); // add arguments from the workspace settings
         actualArgs = actualArgs.concat([
             "-D", "display-details", // get more details in completion results,
+            "-D", "display-json", // use JSON api
             "--no-output", // prevent anygeneration
         ]);
         actualArgs = actualArgs.concat(args); // finally, add given query args

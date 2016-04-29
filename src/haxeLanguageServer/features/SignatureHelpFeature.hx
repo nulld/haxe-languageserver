@@ -3,9 +3,15 @@ package haxeLanguageServer.features;
 import jsonrpc.CancellationToken;
 import jsonrpc.ResponseError;
 import haxeLanguageServer.vscodeProtocol.Types;
-import haxeLanguageServer.TypeHelper.*;
+import haxeLanguageServer.HaxeDisplayTypes;
 
 using StringTools;
+
+private typedef Signature = {
+    args:Array<FieldOrArg>,
+    ret:TypeInfo,
+    ?doc:String,
+}
 
 class SignatureHelpFeature extends Feature {
     override function init() {
@@ -26,25 +32,17 @@ class SignatureHelpFeature extends Feature {
             if (token.canceled)
                 return;
 
-            data = '<x>$data</x>';
-            var xml = try Xml.parse(data).firstElement() catch (_:Dynamic) null;
-            if (xml == null) return reject(ResponseError.internalError("Invalid xml data: " + data));
+            var data:Array<Signature> = try haxe.Json.parse(data) catch (_:Dynamic) return reject(ResponseError.internalError("Invalid JSON data: " + data));
 
             var signatures = new Array<SignatureInformation>();
-            for (el in xml.elements()) {
-                var text = el.firstChild().nodeValue.trim();
-                var signature:SignatureInformation;
-                switch (parseDisplayType(text)) {
-                    case DTFunction(args, ret):
-                        signature = {
-                            label: printFunctionSignature(args, ret),
-                            parameters: [for (arg in args) {label: printFunctionArgument(arg)}],
-
-                        }
-                    default:
-                        signature = {label: text}; // this should not happen
-                }
-                signatures.push(signature);
+            for (entry in data) {
+                var sig:SignatureInformation = {
+                    label: TypePrinter.printFunctionSignature(entry.args, entry.ret),
+                    parameters: [for (i in 0...entry.args.length) {label: TypePrinter.printFunctionArgument(entry.args[i], i)}],
+                };
+                if (entry.doc != null)
+                    sig.documentation = entry.doc;
+                signatures.push(sig);
             }
 
             resolve({
