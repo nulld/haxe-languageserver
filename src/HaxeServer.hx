@@ -24,7 +24,7 @@ class HaxeServer {
     public function start(token:CancellationToken, callback:String->Void) {
         stop();
         trace("Starting haxe server");
-        proc = ChildProcess.spawn("haxe", ["--wait", "stdio"]);
+        proc = ChildProcess.spawn("haxe", ["-v", "--wait", "stdio"]);
         buffer = new MessageBuffer();
         nextMessageLength = -1;
         proc.stdout.on(ReadableEvent.Data, function(buf:Buffer) context.protocol.sendVSHaxeLog(buf.toString()));
