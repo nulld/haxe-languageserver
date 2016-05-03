@@ -23,6 +23,7 @@ class HaxeServer {
 
     public function start(token:CancellationToken, callback:String->Void) {
         stop();
+        trace("Starting haxe server");
         proc = ChildProcess.spawn("haxe", ["--wait", "stdio"]);
         buffer = new MessageBuffer();
         nextMessageLength = -1;
@@ -47,6 +48,7 @@ class HaxeServer {
 
     public function stop() {
         if (proc != null) {
+            trace("Stopping haxe server");
             proc.removeAllListeners();
             proc.kill();
             proc = null;
@@ -63,21 +65,31 @@ class HaxeServer {
     }
 
     function onData(data:Buffer) {
+        trace("Got data from Haxe server, length=" + data.length);
         buffer.append(data);
         while (true) {
             if (nextMessageLength == -1) {
                 var length = buffer.tryReadLength();
-                if (length == -1)
+                if (length == -1) {
+                    trace("Message length not yet there");
                     return;
+                }
+                trace("Got message length", length);
                 nextMessageLength = length;
             }
             var msg = buffer.tryReadContent(nextMessageLength);
-            if (msg == null)
+            if (msg == null) {
+                trace("Message content not yet there");
                 return;
+            }
+            trace("Got message content");
             nextMessageLength = -1;
             var cb = callbacks.shift();
-            if (cb != null)
+            if (cb != null) {
                 cb(msg);
+            } else {
+                trace("No callback in queue - that's weird");
+            }
         }
     }
 
@@ -89,6 +101,8 @@ class HaxeServer {
             args.push("-D");
             args.push("display-stdin");
         }
+
+        trace("Calling haxe with args", args.join(" "));
 
         var chunks = [];
         var length = 0;
@@ -103,16 +117,20 @@ class HaxeServer {
             var buf = new Buffer(stdin);
             chunks.push(buf);
             length += buf.length + stdinSepBuf.length;
+            trace("stdin length", buf.length);
         }
 
+        trace('Writing to haxe stdin (length=$length)');
         lenBuf.writeInt32LE(length, 0);
         proc.stdin.write(lenBuf);
-
         proc.stdin.write(Buffer.concat(chunks, length));
 
         callbacks.push(function(data) {
-            if (token.canceled)
+            trace("Executing callback for args", args.join(" "));
+            if (token.canceled) {
+                trace("Canceled!");
                 return callback(null);
+            }
 
             var buf = new StringBuf();
             var hasError = false;
