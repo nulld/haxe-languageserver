@@ -5,9 +5,18 @@ import vscode.BasicTypes;
 import jsonrpc.Protocol;
 import jsonrpc.Types;
 
+@:enum abstract UnresolvedIdentifierSuggestion(Int) {
+    var UISImport = 0;
+    var UISTypo = 1;
+
+    public inline function new(i:Int) {
+        this = i;
+    }
+}
+
 @:enum abstract DiagnosticsKind<T>(Int) from Int to Int {
     var DKUnusedImport:DiagnosticsKind<Void> = 0;
-    var DKUnresolvedIdentifier:DiagnosticsKind<Array<String>> = 1;
+    var DKUnresolvedIdentifier:DiagnosticsKind<Array<{kind: UnresolvedIdentifierSuggestion, name: String}>> = 1;
 
     public inline function new(i:Int) {
         this = i;
@@ -102,11 +111,20 @@ class DiagnosticsFeature extends Feature {
                 case DKUnresolvedIdentifier:
                     var args = getDiagnosticsArguments(code, d.range);
                     for (arg in args) {
-                        ret.push({
-                            title: "import " + arg,
-                            command: "haxe.applyFixes", // TODO
-                            arguments: []
-                        });
+                        var kind = new UnresolvedIdentifierSuggestion(Std.parseInt(d.code));
+                        var command:Command = switch (kind) {
+                            case UISImport: {
+                                title: "import " + arg.name,
+                                command: "haxe.applyFixes", // TODO
+                                arguments: []
+                            }
+                            case UISTypo: {
+                                title: "Change to " +arg.name,
+                                command: "haxe.applyFixes",
+                                arguments: [params.textDocument.uri, 0, [{range: d.range, newText: arg.name}]]
+                            }
+                        }
+                        ret.push(command);
                     }
             }
         }
