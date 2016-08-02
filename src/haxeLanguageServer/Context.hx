@@ -81,7 +81,8 @@ class Context {
                 hoverProvider: true,
                 referencesProvider: true,
                 documentSymbolProvider: true,
-                codeActionProvider: true
+                codeActionProvider: true,
+                renameProvider: true
             }
         });
     }
@@ -112,6 +113,7 @@ class Context {
                 new FindReferencesFeature(this);
                 new DocumentSymbolsFeature(this);
                 new CalculatePackageFeature(this);
+                new RenameFeature(this);
 
                 diagnostics = new DiagnosticsManager(this);
                 new CodeActionFeature(this, diagnostics);
